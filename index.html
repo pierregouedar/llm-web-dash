@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LLM Dashboard</title>
+<style>
+  :root {
+    --bg: #0d1117; --panel: #161b22; --panel2: #0b0f14; --border: #26303d;
+    --fg: #e6edf3; --muted: #8b949e; --accent: #58a6ff; --success: #3fb950;
+    --warning: #d29922; --error: #f85149; --c1:#58a6ff; --c2:#3fb950; --c3:#d29922; --c4:#f85149;
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
+  header { display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+    padding:12px 20px; background:var(--panel); border-bottom:1px solid var(--border); }
+  header h1 { font-size:16px; margin:0; font-weight:600; }
+  .conn { display:flex; align-items:center; gap:6px; font-size:13px; color:var(--muted); }
+  .dot { width:9px; height:9px; border-radius:50%; background:var(--muted); }
+  .dot.ok { background:var(--success); } .dot.err { background:var(--error); }
+  input[type=text] { background:var(--panel2); border:1px solid var(--border); color:var(--fg);
+    border-radius:6px; padding:6px 10px; font-size:13px; width:260px; }
+  button { background:var(--panel2); border:1px solid var(--border); color:var(--fg);
+    border-radius:6px; padding:6px 12px; font-size:13px; cursor:pointer; }
+  button:hover { border-color:var(--accent); }
+  .spacer { flex:1; }
+  .refresh { color:var(--muted); font-size:12px; }
+  main { padding:20px; max-width:1400px; margin:0 auto; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); gap:16px; }
+  .card { background:var(--panel); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+  .card h2 { font-size:13px; text-transform:uppercase; letter-spacing:.5px; color:var(--muted);
+    margin:0; padding:12px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px; }
+  .card .body { padding:14px 16px; }
+  .stat-row { display:flex; justify-content:space-between; align-items:baseline; padding:6px 0;
+    border-bottom:1px dashed var(--border); }
+  .stat-row:last-child { border-bottom:none; }
+  .stat-label { color:var(--muted); }
+  .stat-val { font-variant-numeric:tabular-nums; font-weight:600; }
+  .bar { height:8px; background:var(--panel2); border-radius:4px; overflow:hidden; margin-top:4px; }
+  .bar > span { display:block; height:100%; background:var(--accent); transition:width .5s; }
+  .state { display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600; }
+  .state.loaded { background:rgba(63,185,80,.15); color:var(--success); }
+  .state.starting { background:rgba(210,153,34,.15); color:var(--warning); }
+  .state.idle { background:rgba(139,148,158,.15); color:var(--muted); }
+  .state.stopped { background:rgba(248,81,73,.15); color:var(--error); }
+  .model-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:8px; }
+  .model-name { font-weight:600; }
+  .model-meta { font-size:11px; color:var(--muted); }
+  .btns { display:flex; gap:6px; }
+  .btns button { padding:4px 10px; font-size:12px; }
+  .btn-wake { border-color:var(--success); } .btn-wake:hover { background:rgba(63,185,80,.12); }
+  .btn-unload { border-color:var(--error); } .btn-unload:hover { background:rgba(248,81,73,.12); }
+  table { width:100%; border-collapse:collapse; font-size:12px; }
+  th, td { text-align:left; padding:5px 8px; border-bottom:1px solid var(--border); }
+  th { color:var(--muted); font-weight:500; }
+  td.num { text-align:right; font-variant-numeric:tabular-nums; }
+  .queue-item { padding:8px 0; border-bottom:1px dashed var(--border); }
+  .queue-item:last-child { border-bottom:none; }
+  .muted { color:var(--muted); }
+  .empty { color:var(--muted); padding:16px; text-align:center; }
+  .vram-bar { background:var(--c1); } .ram-bar { background:var(--c2); }
+  .flash { animation: flash .6s ease; }
+  @keyframes flash { from { background:rgba(88,166,255,.15);} to { background:transparent; } }
+  .activity-canvas { width:100%; height:120px; background:var(--panel2); border-radius:6px; }
+  footer { text-align:center; color:var(--muted); font-size:11px; padding:20px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🔷 LLM Dashboard</h1>
+  <div class="conn"><span class="dot" id="connDot"></span><span id="connText">connecté à <b id="hostLabel">—</b></span></div>
+  <div class="spacer"></div>
+  <span class="refresh" id="lastUpdate"></span>
+  <input type="text" id="hostInput" placeholder="http://nas:8080" spellcheck="false">
+  <input type="text" id="hostKeyInput" placeholder="clé API (optionnel)" spellcheck="false" style="width:220px">
+  <input type="text" id="pollInput" placeholder="intervalle (ms)" spellcheck="false" style="width:120px">
+  <button id="saveBtn">Connexion</button>
+</header>
+
+<main>
+  <div class="grid">
+    <!-- Hardware -->
+    <div class="card">
+      <h2>⚙️ Hardware</h2>
+      <div class="body" id="hwBody">
+        <div class="stat-row"><span class="stat-label">VRAM</span><span class="stat-val" id="vramVal">—</span></div>
+        <div class="bar"><span class="vram-bar" id="vramBar" style="width:0%"></span></div>
+        <div class="stat-row" style="margin-top:10px"><span class="stat-label">RAM</span><span class="stat-val" id="ramVal">—</span></div>
+        <div class="bar"><span class="ram-bar" id="ramBar" style="width:0%"></span></div>
+        <div class="stat-row" style="margin-top:10px"><span class="stat-label">GPU</span><span class="stat-val" id="gpuVal">—</span></div>
+        <div class="bar"><span style="background:var(--c3)"></span></div>
+        <div class="stat-row" style="margin-top:10px"><span class="stat-label">Utilisation GPU</span><span class="stat-val" id="nvidiaVal">—</span></div>
+      </div>
+    </div>
+
+    <!-- Throughput -->
+    <div class="card">
+      <h2>⚡ Débit (tok/s)</h2>
+      <div class="body">
+        <div class="stat-row"><span class="stat-label">Génération (moy)</span><span class="stat-val" id="outRateVal">—</span></div>
+        <div class="stat-row"><span class="stat-label">Prompt (moy)</span><span class="stat-val" id="inRateVal">—</span></div>
+        <canvas class="activity-canvas" id="activityCanvas"></canvas>
+        <div class="muted" style="font-size:11px;margin-top:6px">Génération des 60 dernières secondes</div>
+      </div>
+    </div>
+
+    <!-- Models -->
+    <div class="card">
+      <h2>🧩 Modèles</h2>
+      <div class="body" id="modelsBody"><div class="empty">Chargement…</div></div>
+    </div>
+
+    <!-- Queue / In-flight -->
+    <div class="card">
+      <h2>🚦 File d'attente</h2>
+      <div class="body" id="queueBody"><div class="empty">—</div></div>
+    </div>
+
+    <!-- Requests -->
+    <div class="card" style="grid-column:1/-1">
+      <h2>📝 Requêtes récentes</h2>
+      <div class="body">
+        <table id="reqTable">
+          <thead><tr><th>Heure</th><th>Modèle</th><th>État</th><th class="num">In</th><th class="num">Out</th><th class="num">Latence</th><th class="num">tok/s</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="empty" id="reqEmpty">Aucune requête</div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>Données via l'API llama-swap · rafraîchissement 3s · <span id="ver">—</span></footer>
+
+<script src="app.js"></script>
+</body>
+</html>
