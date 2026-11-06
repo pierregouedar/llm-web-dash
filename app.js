@@ -113,6 +113,9 @@ function renderHw(metrics) {
   }
   $('gpuVal').textContent = g.name || '—';
   $('nvidiaVal').textContent = g.util != null ? `${Math.round(g.util)}% GPU` : '—';
+  $('cpuVal').textContent = metrics.cpu != null ? `${Math.round(metrics.cpu)}% CPU` : '—';
+  $('gpuTempVal').textContent = g.temp != null ? `${Math.round(g.temp)}°C` : '—';
+  $('gpuPowerVal').textContent = g.power != null ? `${g.power.toFixed(0)} W` : '—';
 
   const m = metrics.mem;
   if (m) {
@@ -305,22 +308,34 @@ function parseMetrics(text) {
       if (nm) gpuName = nm[1];
     }
     if (name.startsWith('llamaswap_gpu_memory_used_bytes')) {
-      const g = gpuById.get(idx) || (gpuById.set(idx, { id: idx, name: gpuName, used: 0, total: 0, util: null }) && gpuById.get(idx));
+      const g = gpuById.get(idx) || (gpuById.set(idx, { id: idx, name: gpuName, used: 0, total: 0, util: null, temp: null, power: null }) && gpuById.get(idx));
       g.used = val;
     } else if (name.startsWith('llamaswap_gpu_memory_total_bytes')) {
-      const g = gpuById.get(idx) || (gpuById.set(idx, { id: idx, name: gpuName, used: 0, total: 0, util: null }) && gpuById.get(idx));
+      const g = gpuById.get(idx) || (gpuById.set(idx, { id: idx, name: gpuName, used: 0, total: 0, util: null, temp: null, power: null }) && gpuById.get(idx));
       g.total = val;
     } else if (name.startsWith('llamaswap_gpu_util_percent')) {
-      const g = gpuById.get(idx) || (gpuById.set(idx, { id: idx, name: gpuName, used: 0, total: 0, util: null }) && gpuById.get(idx));
+      const g = gpuById.get(idx) || (gpuById.set(idx, { id: idx, name: gpuName, used: 0, total: 0, util: null, temp: null, power: null }) && gpuById.get(idx));
       g.util = val;
+    } else if (name.startsWith('llamaswap_gpu_temperature_celsius')) {
+      const g = gpuById.get(idx) || (gpuById.set(idx, { id: idx, name: gpuName, used: 0, total: 0, util: null, temp: null, power: null }) && gpuById.get(idx));
+      g.temp = val;
+    } else if (name.startsWith('llamaswap_gpu_power_draw_watts')) {
+      const g = gpuById.get(idx) || (gpuById.set(idx, { id: idx, name: gpuName, used: 0, total: 0, util: null, temp: null, power: null }) && gpuById.get(idx));
+      g.power = val;
     } else if (name === 'llamaswap_memory_used_bytes') { out.mem = out.mem || {}; out.mem.used = val; }
     else if (name === 'llamaswap_memory_total_bytes') { out.mem = out.mem || {}; out.mem.total = val; }
+    else if (name.startsWith('llamaswap_cpu_util_percent')) {
+      out.cpu = out.cpu || 0;
+      out.cpu += val;
+      out.cpuCount = (out.cpuCount || 0) + 1;
+    }
   }
   // Pick the real GPU: dedicated VRAM, not the software "Render Driver".
   for (const g of gpuById.values()) {
     if (!g.name || /microsoft|render driver|basic/i.test(g.name)) continue;
     if (g.total && g.total > 0) { out.gpu = g; break; }
   }
+  if (out.cpuCount) { out.cpu /= out.cpuCount; }
   return out;
 }
 

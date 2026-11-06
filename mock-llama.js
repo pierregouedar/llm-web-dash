@@ -31,13 +31,25 @@ const s = http.createServer((req,res)=>{
       '# HELP llamaswap_gpu_util_percent GPU utilization\n' +
       '# TYPE llamaswap_gpu_util_percent gauge\n' +
       'llamaswap_gpu_util_percent{id="0"} 96\n' +
+      '# HELP llamaswap_cpu_util_percent CPU utilization per core (0-100)\n' +
+      '# TYPE llamaswap_cpu_util_percent gauge\n' +
+      'llamaswap_cpu_util_percent{core="0"} 67\n' +
+      'llamaswap_cpu_util_percent{core="1"} 44\n' +
+      'llamaswap_cpu_util_percent{core="2"} 73\n' +
+      'llamaswap_cpu_util_percent{core="3"} 34\n' +
+      '# HELP llamaswap_gpu_temperature_celsius GPU temperature in Celsius\n' +
+      '# TYPE llamaswap_gpu_temperature_celsius gauge\n' +
+      'llamaswap_gpu_temperature_celsius{id="0",name="NVIDIA GeForce RTX 4090"} 55\n' +
+      '# HELP llamaswap_gpu_power_draw_watts GPU power draw in watts\n' +
+      '# TYPE llamaswap_gpu_power_draw_watts gauge\n' +
+      'llamaswap_gpu_power_draw_watts{id="0",name="NVIDIA GeForce RTX 4090"} 216\n' +
       '# HELP llamaswap_memory_used_bytes Used system memory\n' +
       '# TYPE llamaswap_memory_used_bytes gauge\n' +
       'llamaswap_memory_used_bytes 29856411648\n' +
       '# HELP llamaswap_memory_total_bytes Total system memory\n' +
       '# TYPE llamaswap_memory_total_bytes gauge\n' +
       'llamaswap_memory_total_bytes 34359738368\n' +
-      '\n# HELP llamaswap_system_cpu_percent System CPU\n# TYPE llamaswap_system_cpu_percent gauge\nllamaswap_system_cpu_percent 42\n\n'
+      '\n'
     );
     return;
   }
