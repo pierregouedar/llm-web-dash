@@ -20,7 +20,6 @@
 - **Queue** — models currently starting up
 - **Recent requests** — model, status, in/out tokens, latency, throughput
 
-![Dashboard preview](./unslop/redesign.png)
 
 ---
 
