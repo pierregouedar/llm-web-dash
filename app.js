@@ -10,6 +10,7 @@ let activity = [];        // [{t, rate}] generation tokens/s over time
 let reqRows = [];         // recent request rows (bounded)
 let refreshInterval;     // periodic refresh handle
 let sseController;       // abort handle for live SSE stream
+let sseTimer;           // reconnect timer handle
 
 const $ = (id) => document.getElementById(id);
 
@@ -324,6 +325,7 @@ async function refresh() {
 // x-api-key header required by auth-protected servers.
 function connectEvents() {
   if (sseController) { try { sseController.abort(); } catch (_) {} }
+  if (sseTimer) clearTimeout(sseTimer);
   async function stream() {
     // Create the controller before fetch so aborting it cancels the request,
     // the body reader loop, and the reconnect timers below.
@@ -334,7 +336,7 @@ function connectEvents() {
         headers: headers(),
         signal: controller.signal,
       });
-      if (!res.ok) { setConn(false); setTimeout(stream, 3000); return; }
+      if (!res.ok) { setConn(false); sseTimer = setTimeout(stream, 3000); return; }
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buf = '';
@@ -350,7 +352,7 @@ function connectEvents() {
       }
     } catch (e) {
       if (controller.signal.aborted) return; // aborted on purpose; new stream started
-      setTimeout(stream, 3000);
+      sseTimer = setTimeout(stream, 3000);
     }
   }
   function handleSSE(chunk) {
