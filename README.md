@@ -1,61 +1,83 @@
 # LLM Dashboard
 
-Dashboard web léger (HTML + JS, zéro dépendance) pour surveiller l'état des modèles
-llama-swap / llama-cpp sur une machine du réseau, destiné à être hébergé sur un NAS.
+> Lightweight, dependency-free web dashboard for monitoring **llama-swap** / **llama-cpp**
+> model state on a machine anywhere on your network — meant to be hosted on a NAS.
 
-## Fonctionnalités
+[![Status](https://img.shields.io/badge/status-production%20ready-38e0c9)](#status)
+[![No dependencies](https://img.shields.io/badge/deps-0%20installed-7a8296)](#dependencies)
+[![License](https://img.shields.io/badge/license-MIT-7a8296)](#license)
+[![Language](https://img.shields.io/badge/lang-HTML%20%7C%20CSS%20%7C%20JS-7a8296)](#language)
 
-  - **Hardware** : VRAM, RAM système, modèle de GPU, utilisation GPU — charge *live*
-- **Débit** : tokens/s en génération et en prompt, avec courbe des 60 dernières secondes
-- **Modèles** : statut (chargé / démarrage / inactif / arrêté), boutons Réveiller / Décharger
-- **File d'attente** : modèles en cours de démarrage
-- **Requêtes récentes** : modèle, statut, tokens in/out, latence, débit
+![LLM Dashboard](./logo.svg)
 
-## Utilisation
+---
 
-Le dashboard lit `config.json` au démarrage (hôte, clé API, intervalle en ms), puis
-`localStorage` pour les dépassements utilisateur. Modifier directement `config.json`
-suffit pour configurer l'hôte et la clé ; l'interface permet aussi de tout saisir
-manuellement puis **Connexion**.
+## Features
 
-`config.json` :
+- **Hardware** — VRAM, system RAM, GPU model, GPU utilization — loaded *live* from Prometheus `/metrics`
+- **Throughput** — generation and prompt tokens/s, with a 60-second rolling chart
+- **Models** — state (loaded / starting / idle / stopped), Wake / Unload actions
+- **Queue** — models currently starting up
+- **Recent requests** — model, status, in/out tokens, latency, throughput
+
+![Dashboard preview](./unslop/redesign.png)
+
+---
+
+## Usage
+
+The dashboard reads `config.json` at startup (host, API key, poll interval in ms), then
+`localStorage` for user overrides. Editing `config.json` directly is enough to set the host
+and key; the UI also lets you type everything manually and press **Connect**.
+
+`config.json`:
 
 ```json
 { "host": "http://nas:8080", "apiKey": "", "pollMs": 3000 }
 ```
 
-## API llama-swap consultées
+---
 
-| Panneau | Endpoint |
-|---------|----------|
-| Hardware | `GET /metrics` (Prometheus, charge live) |
-| État modèles | `GET /running` |
-| Débit / requêtes | `GET /api/metrics/activity?limit=50` |
-| Liste modèles (live) | `GET /api/events` (SSE) |
+## llama-swap endpoints used
+
+| Panel | Endpoint |
+|-------|----------|
+| Hardware | `GET /metrics` (Prometheus, live load) |
+| Model state | `GET /running` |
+| Throughput / requests | `GET /api/metrics/activity?limit=50` |
+| Model list (live) | `GET /api/events` (SSE) |
 | Version | `GET /api/version` |
-| Réveiller | `POST /v1/chat/completions` (première requ déclenche le swap) |
-| Décharger | `POST /api/models/unload/{model}` |
+| Wake | `POST /v1/chat/completions` (first request triggers the swap) |
+| Unload | `POST /api/models/unload/{model}` |
 
-> `llama-swap` n'a pas d'endpoint de chargement dédié : un modèle se réveille à la
-> première requête d'inférence. Le bouton « Réveiller » envoie donc une petite
-> complétion jetée ; non testé en production.
+> `llama-swap` has no dedicated "load" endpoint: a model wakes on its first inference
+> request. So the **Wake** button sends a throwaway tiny completion; untested in production.
 
-> Le dashboard tourne dans le navigateur. `config.json` est lu côté client, la clé
-> API est stockée en `localStorage` et transmise dans `x-api-key` sur toutes les
-> requêtes. Tout visiteur du site (ou quiconnaient l'URL du NAS) peut lire le JSON
-> et le localStorage : la clé y est donc en clair. Utilisez une clé dédiée, limitée
-> à l'API llama-swap, et révoquez-la si elle a été exposée.
+> The dashboard runs in the browser. `config.json` is read client-side, the API key is
+> stored in `localStorage`, and sent in the `x-api-key` header on every request. Anyone who
+> visits the site (or knows the NAS URL) can read the JSON and the `localStorage` — the key
+> is in plaintext. Use a dedicated key scoped to the llama-swap API, and revoke it if exposed.
 
-## Test avec le mock
+---
 
-Le fichier `mock-llama.js` sert une fausse API llama-swap pour tester le dashboard
-sans machine réelle :
+## Test with the mock
+
+`mock-llama.js` serves a fake llama-swap API so you can try the dashboard without a real
+machine:
 
 ```sh
 node mock-llama.js index.html
-# puis ouvrir http://localhost:8123/ et entrer http://localhost:8123 dans le champ
+# then open http://localhost:8123/ and enter http://localhost:8123 in the host field
 ```
 
-## Dépendances
+---
 
-Aucune. HTML/CSS/JS vanilla, compatible navigateurs récents.
+## Dependencies
+
+None. HTML/CSS/JS vanilla, compatible with recent browsers.
+
+---
+
+## License
+
+MIT

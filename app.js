@@ -89,13 +89,13 @@ function stateClass(s) {
 }
 function stateLabel(s) {
   const v = String(s || '');
-  if (/^\d{3}$/.test(v)) return Number(v) >= 400 ? 'échoué (' + v + ')' : 'réussi';
+  if (/^\d{3}$/.test(v)) return Number(v) >= 400 ? 'failed (' + v + ')' : 'succeeded';
   const t = v.toLowerCase();
-  if (t === 'loaded' || t === 'ready' || t === 'running') return 'chargé';
-  if (t.includes('start') || t === 'loading') return 'démarrage';
-  if (t === 'idle') return 'inactif';
-  if (t === 'stopped' || t === 'unloaded') return 'arrêté';
-  return v || 'inconnu';
+  if (t === 'loaded' || t === 'ready' || t === 'running') return 'loaded';
+  if (t.includes('start') || t === 'loading') return 'starting';
+  if (t === 'idle') return 'idle';
+  if (t === 'stopped' || t === 'unloaded') return 'stopped';
+  return v || 'unknown';
 }
 
 // --- Rendering --------------------------------------------------------------
@@ -125,7 +125,7 @@ function renderHw(metrics) {
 
 function renderModels(models) {
   const body = $('modelsBody');
-  if (!models.length) { body.innerHTML = '<div class="empty">Aucun modèle configuré</div>'; return; }
+  if (!models.length) { body.innerHTML = '<div class="empty">No models configured</div>'; return; }
   body.innerHTML = models.map(m => `
     <div class="model-head">
       <div>
@@ -133,8 +133,8 @@ function renderModels(models) {
         <div class="model-meta">${escapeHtml(m.name || m.id)} · <span class="state ${stateClass(m.state)}">${stateLabel(m.state)}</span></div>
       </div>
       <div class="btns">
-        <button class="btn-wake" onclick="wake('${escapeAttr(m.id)}')">▶ Réveiller</button>
-        <button class="btn-unload" onclick="unload('${escapeAttr(m.id)}')">■ Décharger</button>
+        <button class="btn-wake" onclick="wake('${escapeAttr(m.id)}')">Wake</button>
+        <button class="btn-unload" onclick="unload('${escapeAttr(m.id)}')">Unload</button>
       </div>
     </div>
   `).join('');
@@ -146,7 +146,7 @@ function renderQueue(running) {
     const s = (r.state || '').toLowerCase();
     return s.includes('start') || s === 'loading';
   });
-  if (!busy.length) { body.innerHTML = '<div class="empty">Rien en cours de démarrage</div>'; return; }
+  if (!busy.length) { body.innerHTML = '<div class="empty">Nothing starting</div>'; return; }
   body.innerHTML = busy.map(r => `
     <div class="queue-item">
       <b>${escapeHtml(r.name || r.model)}</b>
@@ -164,7 +164,7 @@ function renderRequests() {
     const rate = fmtNum(t.tokens_per_second);
     return `
     <tr>
-      <td>${escapeHtml(new Date(r.timestamp).toLocaleTimeString('fr-FR'))}</td>
+      <td>${escapeHtml(new Date(r.timestamp).toLocaleTimeString('en-US'))}</td>
       <td>${escapeHtml(r.model)}</td>
       <td><span class="state ${stateClass(r.resp_status_code || '')}">${stateLabel(r.resp_status_code || '')}</span></td>
       <td class="num">${fmtNum(t.input_tokens, 0)}</td>
@@ -180,11 +180,15 @@ function renderActivity() {
   const ctx = c.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
   const w = c.clientWidth, h = c.clientHeight;
-  if (c.width !== w * dpr) { c.width = w * dpr; c.height = h * dpr; ctx.scale(dpr, dpr); }
+  if (c.width !== w * dpr || c.height !== h * dpr) {
+    c.width = w * dpr; c.height = h * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, w, h);
 if (activity.length < 2) {
     ctx.fillStyle = '#7a8296'; ctx.font = '12px "IBM Plex Mono", monospace'; ctx.textAlign = 'center';
-    ctx.fillText('collecte en cours…', w / 2, h / 2); return;
+    ctx.fillText('collecting…', w / 2, h / 2); return;
   }
   const max = Math.max(1, ...activity.map(a => a.rate));
   const n = activity.length;
@@ -210,7 +214,7 @@ if (activity.length < 2) {
     const y = h - (a.rate / max) * (h - 4) - 2;
     i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
   });
-  ctx.lineTo(w, h); ctx.closePath();
+  ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath();
   const g = ctx.createLinearGradient(0, 0, 0, h);
   g.addColorStop(0, 'rgba(56,224,201,.25)'); g.addColorStop(1, 'rgba(56,224,201,0)');
   ctx.fillStyle = g; ctx.fill();
@@ -277,10 +281,10 @@ async function wake(model) {
       headers: headers(),
       body: JSON.stringify({ model, messages: [{ role: 'user', content: 'wake' }], max_tokens: 1, temperature: 0 }),
     });
-    if (!r.ok) { flash('Réveil échoué (' + r.status + ') ' + model); return; }
-    flash('Réveil ' + model);
+    if (!r.ok) { flash('Wake failed (' + r.status + ') ' + model); return; }
+    flash('Woke ' + model);
   } catch (e) {
-    alert('Réveil échoué : ' + e.message);
+    alert('Wake failed: ' + e.message);
   }
   setTimeout(refresh, 500);
 }
@@ -288,7 +292,7 @@ window.wake = wake;
 
 async function unload(model) {
   const r = await fetch(api('/api/models/unload/' + encodeURIComponent(model)), { method: 'POST', headers: headers() });
-  if (r.ok) flash('Déchargement ' + model); else alert('Déchargement échoué (' + r.status + ')');
+  if (r.ok) flash('Unloaded ' + model); else alert('Unload failed (' + r.status + ')');
   refresh();
 }
 window.unload = unload;
@@ -335,11 +339,11 @@ async function refresh() {
     }
     if (ver) $('ver').textContent = ver;
     setConn(true);
-    $('lastUpdate').textContent = 'mis à jour ' + new Date().toLocaleTimeString('fr-FR');
+    $('lastUpdate').textContent = 'updated ' + new Date().toLocaleTimeString('en-US');
   } catch (e) {
     setConn(false);
     const lbl = $('hostLabel');
-    $('connText').innerHTML = '<span style="color:var(--error)">hors ligne — vérifiez l\'hôte</span>' + (lbl ? ' <b id="hostLabel">' + lbl.textContent + '</b>' : '');
+    $('connText').innerHTML = '<span style="color:var(--error)">offline — check the host</span>' + (lbl ? ' <b id="hostLabel">' + lbl.textContent + '</b>' : '');
     console.warn('poll failed', e);
   }
 }

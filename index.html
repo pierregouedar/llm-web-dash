@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -105,6 +105,7 @@
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: 16px;
   }
+  .span-3 { grid-column: span 3; }
   .span-full { grid-column: 1 / -1; }
 
   /* --- Card --- */
@@ -242,14 +243,14 @@
   </div>
   <div class="conn">
     <span class="dot" id="connDot"></span>
-    <span id="connText">connecté à <b id="hostLabel">—</b></span>
+    <span id="connText">connected to <b id="hostLabel">—</b></span>
   </div>
   <div class="spacer"></div>
   <span class="refresh" id="lastUpdate"></span>
   <input type="text" id="hostInput" class="field" placeholder="http://nas:8080" spellcheck="false">
-  <input type="text" id="hostKeyInput" class="field" placeholder="clé API" spellcheck="false">
-  <input type="text" id="pollInput" class="field" placeholder="intervalle (ms)" spellcheck="false">
-  <button id="saveBtn">Connexion</button>
+  <input type="text" id="hostKeyInput" class="field" placeholder="API key" spellcheck="false">
+  <input type="text" id="pollInput" class="field" placeholder="interval (ms)" spellcheck="false">
+  <button id="saveBtn">Connect</button>
 </header>
 
 <main>
@@ -266,7 +267,7 @@
         <div class="stat-row" style="margin-top:4px"><span class="stat-label">RAM</span><span class="stat-val" id="ramVal">—</span></div>
         <div class="bar bar-ram" id="ramBarWrap"><span class="ram-bar" id="ramBar" style="width:0%"></span></div>
         <div class="stat-row" style="margin-top:4px"><span class="stat-label">GPU</span><span class="stat-val" id="gpuVal">—</span></div>
-        <div class="stat-row" style="margin-top:4px"><span class="stat-label">Utilisation</span><span class="stat-val" id="nvidiaVal">—</span></div>
+        <div class="stat-row" style="margin-top:4px"><span class="stat-label">Utilization</span><span class="stat-val" id="nvidiaVal">—</span></div>
       </div>
     </div>
 
@@ -274,14 +275,14 @@
     <div class="card">
       <h2>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19l5-8 3 4 4-7 4 5"/><path d="M4 4v5h5"/></svg>
-        Débit
+        Throughput
       </h2>
       <div class="body">
-        <div class="stat-row"><span class="stat-label">Génération (moy)</span><span class="stat-val" id="outRateVal">—</span></div>
-        <div class="stat-row"><span class="stat-label">Prompt (moy)</span><span class="stat-val" id="inRateVal">—</span></div>
+        <div class="stat-row"><span class="stat-label">Generation (avg)</span><span class="stat-val" id="outRateVal">—</span></div>
+        <div class="stat-row"><span class="stat-label">Prompt (avg)</span><span class="stat-val" id="inRateVal">—</span></div>
         <div class="activity-wrap">
           <canvas class="activity-canvas" id="activityCanvas"></canvas>
-          <div class="caption">Génération — 60 dernières secondes</div>
+          <div class="caption">Generation — last 60 seconds</div>
         </div>
       </div>
     </div>
@@ -290,39 +291,39 @@
     <div class="card">
       <h2>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l9 4-9 4-9-4 9-4z"/><path d="M3 12l9 4 9-4"/><path d="M3 16l9 4 9-4"/></svg>
-        Modèles
+        Models
       </h2>
-      <div class="body" id="modelsBody"><div class="empty">Chargement…</div></div>
+      <div class="body" id="modelsBody"><div class="empty">Loading…</div></div>
     </div>
 
     <!-- Queue -->
-    <div class="card">
+    <div class="card span-3">
       <h2>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
-        File d'attente
+        Queue
       </h2>
-      <div class="body" id="queueBody"><div class="empty">Rien en cours</div></div>
+      <div class="body" id="queueBody"><div class="empty">Nothing queued</div></div>
     </div>
 
     <!-- Requests -->
     <div class="card span-full">
       <h2>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
-        Requêtes récentes
+        Recent requests
       </h2>
       <div class="body">
         <table id="reqTable">
-          <thead><tr><th>Heure</th><th>Modèle</th><th>État</th><th class="num">In</th><th class="num">Out</th><th class="num">Latence</th><th class="num">tok/s</th></tr></thead>
+          <thead><tr><th>Time</th><th>Model</th><th>Status</th><th class="num">In</th><th class="num">Out</th><th class="num">Latency</th><th class="num">tok/s</th></tr></thead>
           <tbody></tbody>
         </table>
-        <div class="empty" id="reqEmpty">Aucune requête</div>
+        <div class="empty" id="reqEmpty">No requests</div>
       </div>
     </div>
   </div>
 </main>
 
-<footer>Données via l'API llama-swap · rafraîchissement <span id="pollInterval">3s</span> · <span id="ver">—</span></footer>
+<footer>Data via the llama-swap API · refresh <span id="pollInterval">3s</span> · <span id="ver">—</span></footer>
 
-<script src="app.js"></script>
+<script src="app.js?v=2"></script>
 </body>
 </html>
