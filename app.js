@@ -35,6 +35,9 @@ function init() {
     localStorage.setItem(APIKEY_KEY, apiKey);
     localStorage.setItem(POLL_KEY, pollMs);
     $('hostLabel').textContent = host || '—';
+    const secs = Math.round(pollMs / 1000);
+    const pi = $('pollInterval');
+    if (pi) pi.textContent = secs + 's';
     // Restart periodic refresh and live SSE with the new config.
     clearInterval(refreshInterval);
     refreshInterval = setInterval(refresh, pollMs);
@@ -42,6 +45,9 @@ function init() {
     refresh();
   });
   renderModels([]);
+  const secs = Math.round(pollMs / 1000);
+  const pi = $('pollInterval');
+  if (pi) pi.textContent = secs + 's';
   refreshInterval = setInterval(refresh, pollMs);
   connectEvents();
 }
@@ -176,12 +182,28 @@ function renderActivity() {
   const w = c.clientWidth, h = c.clientHeight;
   if (c.width !== w * dpr) { c.width = w * dpr; c.height = h * dpr; ctx.scale(dpr, dpr); }
   ctx.clearRect(0, 0, w, h);
-  if (activity.length < 2) {
-    ctx.fillStyle = '#8b949e'; ctx.font = '12px system-ui'; ctx.textAlign = 'center';
+if (activity.length < 2) {
+    ctx.fillStyle = '#7a8296'; ctx.font = '12px "IBM Plex Mono", monospace'; ctx.textAlign = 'center';
     ctx.fillText('collecte en cours…', w / 2, h / 2); return;
   }
   const max = Math.max(1, ...activity.map(a => a.rate));
   const n = activity.length;
+  // Muted grid: 4 horizontal lines
+  ctx.strokeStyle = 'rgba(238,240,245,0.06)';
+  ctx.lineWidth = 1;
+  for (let i = 1; i < 4; i++) {
+    const y = (h / 4) * i;
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(w, y);
+    ctx.stroke();
+  }
+  // Y-axis labels (max tok/s at top, 0 at bottom)
+  ctx.fillStyle = '#7a8296';
+  ctx.font = '11px "IBM Plex Mono", monospace';
+  ctx.textAlign = 'right';
+  ctx.fillText(Math.round(max).toString(), w - 6, 14);
+  ctx.fillText('0', w - 6, h - 4);
   ctx.beginPath();
   activity.forEach((a, i) => {
     const x = (i / (n - 1)) * w;
@@ -190,7 +212,7 @@ function renderActivity() {
   });
   ctx.lineTo(w, h); ctx.closePath();
   const g = ctx.createLinearGradient(0, 0, 0, h);
-  g.addColorStop(0, 'rgba(88,166,255,.4)'); g.addColorStop(1, 'rgba(88,166,255,0)');
+  g.addColorStop(0, 'rgba(56,224,201,.25)'); g.addColorStop(1, 'rgba(56,224,201,0)');
   ctx.fillStyle = g; ctx.fill();
   ctx.beginPath();
   activity.forEach((a, i) => {
@@ -198,7 +220,7 @@ function renderActivity() {
     const y = h - (a.rate / max) * (h - 4) - 2;
     i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
   });
-  ctx.strokeStyle = '#58a6ff'; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.strokeStyle = '#38e0c9'; ctx.lineWidth = 1.5; ctx.stroke();
 }
 
 function escapeHtml(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
@@ -207,7 +229,7 @@ function escapeAttr(s) { return String(s).replace(/'/g, "\\'"); }
 // Parse Prometheus text into { gpu: {name, used, total, util}, mem: {used, total} }.
 function parseMetrics(text) {
   const out = { gpu: null, mem: null };
-  const gpuByName = new Map();
+  const gpuById = new Map();
   for (const line of text.split('\n')) {
     const s = line.trim();
     if (!s || s.startsWith('#')) continue;
@@ -216,27 +238,29 @@ function parseMetrics(text) {
     const name = s.slice(0, sp);
     let val = parseFloat(s.slice(sp + 1));
     if (Number.isNaN(val)) continue;
-    // Extract labels like {id="0",name="NVIDIA GeForce RTX 3080"}.
-    let gpuName = null;
+    // Labels like {id="0",name="NVIDIA GeForce RTX 3080"}.
+    let idx = null, gpuName = null;
     const m = s.match(/\{([^}]*)\}/);
     if (m) {
+      const im = m[1].match(/id="([^"]*)"/);
+      if (im) idx = im[1];
       const nm = m[1].match(/name="([^"]*)"/);
       if (nm) gpuName = nm[1];
     }
     if (name.startsWith('llamaswap_gpu_memory_used_bytes')) {
-      const g = gpuByName.get(gpuName) || (gpuByName.set(gpuName, { name: gpuName, used: 0, total: 0, util: null }) && gpuByName.get(gpuName));
+      const g = gpuById.get(idx) || (gpuById.set(idx, { id: idx, name: gpuName, used: 0, total: 0, util: null }) && gpuById.get(idx));
       g.used = val;
     } else if (name.startsWith('llamaswap_gpu_memory_total_bytes')) {
-      const g = gpuByName.get(gpuName) || (gpuByName.set(gpuName, { name: gpuName, used: 0, total: 0, util: null }) && gpuByName.get(gpuName));
+      const g = gpuById.get(idx) || (gpuById.set(idx, { id: idx, name: gpuName, used: 0, total: 0, util: null }) && gpuById.get(idx));
       g.total = val;
     } else if (name.startsWith('llamaswap_gpu_util_percent')) {
-      const g = gpuByName.get(gpuName) || (gpuByName.set(gpuName, { name: gpuName, used: 0, total: 0, util: null }) && gpuByName.get(gpuName));
+      const g = gpuById.get(idx) || (gpuById.set(idx, { id: idx, name: gpuName, used: 0, total: 0, util: null }) && gpuById.get(idx));
       g.util = val;
     } else if (name === 'llamaswap_memory_used_bytes') { out.mem = out.mem || {}; out.mem.used = val; }
     else if (name === 'llamaswap_memory_total_bytes') { out.mem = out.mem || {}; out.mem.total = val; }
   }
   // Pick the real GPU: dedicated VRAM, not the software "Render Driver".
-  for (const g of gpuByName.values()) {
+  for (const g of gpuById.values()) {
     if (!g.name || /microsoft|render driver|basic/i.test(g.name)) continue;
     if (g.total && g.total > 0) { out.gpu = g; break; }
   }
@@ -253,8 +277,8 @@ async function wake(model) {
       headers: headers(),
       body: JSON.stringify({ model, messages: [{ role: 'user', content: 'wake' }], max_tokens: 1, temperature: 0 }),
     });
-    if (!r.ok) { flash('⚠ Réveil échoué (' + r.status + ') ' + model); return; }
-    flash('▶ Réveil ' + model);
+    if (!r.ok) { flash('Réveil échoué (' + r.status + ') ' + model); return; }
+    flash('Réveil ' + model);
   } catch (e) {
     alert('Réveil échoué : ' + e.message);
   }
@@ -264,7 +288,7 @@ window.wake = wake;
 
 async function unload(model) {
   const r = await fetch(api('/api/models/unload/' + encodeURIComponent(model)), { method: 'POST', headers: headers() });
-  if (r.ok) flash('■ Déchargement ' + model); else alert('Déchargement échoué (' + r.status + ')');
+  if (r.ok) flash('Déchargement ' + model); else alert('Déchargement échoué (' + r.status + ')');
   refresh();
 }
 window.unload = unload;
@@ -272,7 +296,8 @@ window.unload = unload;
 function flash(msg) {
   const el = document.createElement('div');
   el.textContent = msg;
-  el.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#161b22;border:1px solid #58a6ff;color:#e6edf3;padding:8px 16px;border-radius:8px;z-index:999';
+  el.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:999';
+  el.className = 'flash';
   document.body.appendChild(el);
   setTimeout(() => el.remove(), 2000);
 }

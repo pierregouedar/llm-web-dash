@@ -4,77 +4,251 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>LLM Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0d1117; --panel: #161b22; --panel2: #0b0f14; --border: #26303d;
-    --fg: #e6edf3; --muted: #8b949e; --accent: #58a6ff; --success: #3fb950;
-    --warning: #d29922; --error: #f85149; --c1:#58a6ff; --c2:#3fb950; --c3:#d29922; --c4:#f85149;
+    /* Ink dark ramp */
+    --bg: #07080d;
+    --panel: #11141c;
+    --raised: #1a1e28;
+    --hairline: rgba(238,240,245,0.08);
+    --primary: #eef0f5;
+    --secondary: #a3a9b8;
+    --muted: #7a8296;
+    /* Accent: telemetry cyan */
+    --accent: #38e0c9;
+    /* Semantic, toned to sit in the ramp */
+    --positive: #4cc38a;
+    --warning: #d9a041;
+    --negative: #e5484d;
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
   }
   * { box-sizing: border-box; }
-  body { margin:0; background:var(--bg); color:var(--fg);
-    font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
-  header { display:flex; align-items:center; gap:16px; flex-wrap:wrap;
-    padding:12px 20px; background:var(--panel); border-bottom:1px solid var(--border); }
-  header h1 { font-size:16px; margin:0; font-weight:600; }
-  .conn { display:flex; align-items:center; gap:6px; font-size:13px; color:var(--muted); }
-  .dot { width:9px; height:9px; border-radius:50%; background:var(--muted); }
-  .dot.ok { background:var(--success); } .dot.err { background:var(--error); }
-  input[type=text] { background:var(--panel2); border:1px solid var(--border); color:var(--fg);
-    border-radius:6px; padding:6px 10px; font-size:13px; width:260px; }
-  button { background:var(--panel2); border:1px solid var(--border); color:var(--fg);
-    border-radius:6px; padding:6px 12px; font-size:13px; cursor:pointer; }
-  button:hover { border-color:var(--accent); }
-  .spacer { flex:1; }
-  .refresh { color:var(--muted); font-size:12px; }
-  main { padding:20px; max-width:1400px; margin:0 auto; }
-  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); gap:16px; }
-  .card { background:var(--panel); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
-  .card h2 { font-size:13px; text-transform:uppercase; letter-spacing:.5px; color:var(--muted);
-    margin:0; padding:12px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px; }
-  .card .body { padding:14px 16px; }
-  .stat-row { display:flex; justify-content:space-between; align-items:baseline; padding:6px 0;
-    border-bottom:1px dashed var(--border); }
-  .stat-row:last-child { border-bottom:none; }
-  .stat-label { color:var(--muted); }
-  .stat-val { font-variant-numeric:tabular-nums; font-weight:600; }
-  .bar { height:8px; background:var(--panel2); border-radius:4px; overflow:hidden; margin-top:4px; }
-  .bar > span { display:block; height:100%; background:var(--accent); transition:width .5s; }
-  .state { display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600; }
-  .state.loaded { background:rgba(63,185,80,.15); color:var(--success); }
-  .state.starting { background:rgba(210,153,34,.15); color:var(--warning); }
-  .state.idle { background:rgba(139,148,158,.15); color:var(--muted); }
-  .state.stopped { background:rgba(248,81,73,.15); color:var(--error); }
-  .model-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:8px; }
-  .model-name { font-weight:600; }
-  .model-meta { font-size:11px; color:var(--muted); }
-  .btns { display:flex; gap:6px; }
-  .btns button { padding:4px 10px; font-size:12px; }
-  .btn-wake { border-color:var(--success); } .btn-wake:hover { background:rgba(63,185,80,.12); }
-  .btn-unload { border-color:var(--error); } .btn-unload:hover { background:rgba(248,81,73,.12); }
-  table { width:100%; border-collapse:collapse; font-size:12px; }
-  th, td { text-align:left; padding:5px 8px; border-bottom:1px solid var(--border); }
-  th { color:var(--muted); font-weight:500; }
-  td.num { text-align:right; font-variant-numeric:tabular-nums; }
-  .queue-item { padding:8px 0; border-bottom:1px dashed var(--border); }
-  .queue-item:last-child { border-bottom:none; }
-  .muted { color:var(--muted); }
-  .empty { color:var(--muted); padding:16px; text-align:center; }
-  .vram-bar { background:var(--c1); } .ram-bar { background:var(--c2); }
-  .flash { animation: flash .6s ease; }
-  @keyframes flash { from { background:rgba(88,166,255,.15);} to { background:transparent; } }
-  .activity-canvas { width:100%; height:120px; background:var(--panel2); border-radius:6px; }
-  footer { text-align:center; color:var(--muted); font-size:11px; padding:20px; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--primary);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .mono { font-family: 'IBM Plex Mono', ui-monospace, monospace; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  /* --- Header --- */
+  header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    padding: 16px 24px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--hairline);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand-mark {
+    width: 18px; height: 18px;
+    display: grid; place-items: center;
+  }
+  .brand-mark svg { width: 18px; height: 18px; }
+  .brand h1 {
+    font-size: 16px; font-weight: 600; line-height: 1; margin: 0;
+    letter-spacing: -0.01em;
+  }
+  .conn { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--secondary); }
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--muted);
+    transition: background 160ms var(--ease);
+  }
+  .dot.ok { background: var(--positive); }
+  .dot.err { background: var(--negative); }
+  .spacer { flex: 1; }
+  .refresh { color: var(--muted); font-size: 12px; font-family: 'IBM Plex Mono', monospace; }
+  .field {
+    background: var(--raised);
+    border: 1px solid var(--hairline);
+    color: var(--primary);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 13px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .field::placeholder { color: var(--muted); }
+  .field:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(56,224,201,0.15); }
+  input#pollInput { width: 110px; }
+  input#hostKeyInput { width: 200px; }
+  button#saveBtn {
+    background: var(--accent);
+    border: 1px solid var(--accent);
+    color: #051210;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: opacity 140ms var(--ease);
+  }
+  button#saveBtn:hover { opacity: 0.9; }
+  button#saveBtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  main { padding: 24px; max-width: 1440px; margin: 0 auto; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 16px;
+  }
+  .span-full { grid-column: 1 / -1; }
+
+  /* --- Card --- */
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--hairline);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .card h2 {
+    font-size: 12px; font-weight: 500; color: var(--muted);
+    text-transform: none; letter-spacing: 0; margin: 0;
+    padding: 14px 16px; border-bottom: 1px solid var(--hairline);
+    display: flex; align-items: center; gap: 8px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .card h2 svg { width: 14px; height: 14px; color: var(--muted); }
+  .card .body { padding: 16px; }
+
+  /* --- Stat rows --- */
+  .stat-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--hairline);
+    gap: 16px;
+  }
+  .stat-row:last-child { border-bottom: none; }
+  .stat-label { color: var(--secondary); font-size: 13px; }
+  .stat-val { font-family: 'IBM Plex Mono', monospace; font-weight: 500; color: var(--primary); }
+
+  /* --- Instrument bars --- */
+  .bar {
+    height: 6px; background: var(--raised);
+    border-radius: 3px; overflow: hidden; margin-top: 6px;
+  }
+  .bar > span {
+    display: block; height: 100%;
+    background: var(--accent);
+    transition: width 400ms var(--ease);
+  }
+  .bar.bar-ram > span { background: var(--secondary); }
+
+  /* --- State dot + label --- */
+  .state {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 11px; font-weight: 500; color: var(--secondary);
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .state .pip { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+  .state.loaded .pip { background: var(--positive); }
+  .state.starting .pip { background: var(--warning); }
+  .state.idle .pip { background: var(--muted); }
+  .state.stopped .pip { background: var(--negative); }
+  .state.loaded { color: var(--positive); }
+  .state.starting { color: var(--warning); }
+  .state.stopped { color: var(--negative); }
+  .state.idle { color: var(--muted); }
+
+  /* --- Model list --- */
+  .model-head {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 0; border-bottom: 1px solid var(--hairline); gap: 12px;
+  }
+  .model-head:last-child { border-bottom: none; }
+  .model-name { font-weight: 500; color: var(--primary); }
+  .model-meta { font-size: 12px; color: var(--muted); margin-top: 2px; font-family: 'IBM Plex Mono', monospace; }
+  .btns { display: flex; gap: 6px; }
+  .btns button {
+    background: var(--raised);
+    border: 1px solid var(--hairline);
+    color: var(--secondary);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-family: 'IBM Plex Mono', monospace;
+    cursor: pointer;
+    transition: color 140ms var(--ease), border-color 140ms var(--ease);
+  }
+  .btns button:hover { color: var(--primary); border-color: rgba(238,240,245,0.2); }
+  .btn-wake:hover { color: var(--positive); border-color: rgba(76,195,138,0.4); }
+  .btn-unload:hover { color: var(--negative); border-color: rgba(229,72,77,0.4); }
+
+  /* --- Queue --- */
+  .queue-item { padding: 10px 0; border-bottom: 1px solid var(--hairline); }
+  .queue-item:last-child { border-bottom: none; }
+  .queue-item b { font-weight: 500; }
+
+  /* --- Table --- */
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 8px 8px; border-bottom: 1px solid var(--hairline); font-size: 12px; }
+  th { color: var(--muted); font-weight: 500; font-family: 'IBM Plex Mono', monospace; }
+  td.num { text-align: right; font-family: 'IBM Plex Mono', monospace; }
+  tbody tr:hover { background: rgba(238,240,245,0.02); }
+
+  /* --- Activity chart --- */
+  .activity-wrap { margin-top: 16px; }
+  .activity-canvas { width: 100%; height: 140px; background: var(--raised); border-radius: 8px; display: block; }
+  .caption { font-size: 12px; color: var(--muted); margin-top: 8px; font-family: 'IBM Plex Mono', monospace; }
+
+  .empty { color: var(--muted); padding: 20px; text-align: center; font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+
+  /* --- Flash toast --- */
+  .flash {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: var(--panel); border: 1px solid var(--hairline);
+    color: var(--primary); padding: 8px 16px; border-radius: 8px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+    z-index: 999;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    animation: flash-in 200ms var(--ease);
+  }
+  @keyframes flash-in { from { opacity: 0; transform: translate(-50%, 6px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+  footer {
+    text-align: center; color: var(--muted); font-size: 12px;
+    padding: 24px; font-family: 'IBM Plex Mono', monospace;
+  }
+  footer #ver { color: var(--secondary); }
+
+  @media (max-width: 640px) {
+    header { padding: 12px 16px; gap: 12px; }
+    main { padding: 16px; }
+    field#hostKeyInput { width: 100%; }
+    input#hostInput { width: 100%; }
+  }
 </style>
 </head>
 <body>
 <header>
-  <h1>🔷 LLM Dashboard</h1>
-  <div class="conn"><span class="dot" id="connDot"></span><span id="connText">connecté à <b id="hostLabel">—</b></span></div>
+  <div class="brand">
+    <div class="brand-mark">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg>
+    </div>
+    <h1>LLM Dashboard</h1>
+  </div>
+  <div class="conn">
+    <span class="dot" id="connDot"></span>
+    <span id="connText">connecté à <b id="hostLabel">—</b></span>
+  </div>
   <div class="spacer"></div>
   <span class="refresh" id="lastUpdate"></span>
-  <input type="text" id="hostInput" placeholder="http://nas:8080" spellcheck="false">
-  <input type="text" id="hostKeyInput" placeholder="clé API (optionnel)" spellcheck="false" style="width:220px">
-  <input type="text" id="pollInput" placeholder="intervalle (ms)" spellcheck="false" style="width:120px">
+  <input type="text" id="hostInput" class="field" placeholder="http://nas:8080" spellcheck="false">
+  <input type="text" id="hostKeyInput" class="field" placeholder="clé API" spellcheck="false">
+  <input type="text" id="pollInput" class="field" placeholder="intervalle (ms)" spellcheck="false">
   <button id="saveBtn">Connexion</button>
 </header>
 
@@ -82,44 +256,60 @@
   <div class="grid">
     <!-- Hardware -->
     <div class="card">
-      <h2>⚙️ Hardware</h2>
+      <h2>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M20 9h3M1 15h3M20 15h3"/></svg>
+        Hardware
+      </h2>
       <div class="body" id="hwBody">
         <div class="stat-row"><span class="stat-label">VRAM</span><span class="stat-val" id="vramVal">—</span></div>
         <div class="bar"><span class="vram-bar" id="vramBar" style="width:0%"></span></div>
-        <div class="stat-row" style="margin-top:10px"><span class="stat-label">RAM</span><span class="stat-val" id="ramVal">—</span></div>
-        <div class="bar"><span class="ram-bar" id="ramBar" style="width:0%"></span></div>
-        <div class="stat-row" style="margin-top:10px"><span class="stat-label">GPU</span><span class="stat-val" id="gpuVal">—</span></div>
-        <div class="bar"><span style="background:var(--c3)"></span></div>
-        <div class="stat-row" style="margin-top:10px"><span class="stat-label">Utilisation GPU</span><span class="stat-val" id="nvidiaVal">—</span></div>
+        <div class="stat-row" style="margin-top:4px"><span class="stat-label">RAM</span><span class="stat-val" id="ramVal">—</span></div>
+        <div class="bar bar-ram" id="ramBarWrap"><span class="ram-bar" id="ramBar" style="width:0%"></span></div>
+        <div class="stat-row" style="margin-top:4px"><span class="stat-label">GPU</span><span class="stat-val" id="gpuVal">—</span></div>
+        <div class="stat-row" style="margin-top:4px"><span class="stat-label">Utilisation</span><span class="stat-val" id="nvidiaVal">—</span></div>
       </div>
     </div>
 
     <!-- Throughput -->
     <div class="card">
-      <h2>⚡ Débit (tok/s)</h2>
+      <h2>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19l5-8 3 4 4-7 4 5"/><path d="M4 4v5h5"/></svg>
+        Débit
+      </h2>
       <div class="body">
         <div class="stat-row"><span class="stat-label">Génération (moy)</span><span class="stat-val" id="outRateVal">—</span></div>
         <div class="stat-row"><span class="stat-label">Prompt (moy)</span><span class="stat-val" id="inRateVal">—</span></div>
-        <canvas class="activity-canvas" id="activityCanvas"></canvas>
-        <div class="muted" style="font-size:11px;margin-top:6px">Génération des 60 dernières secondes</div>
+        <div class="activity-wrap">
+          <canvas class="activity-canvas" id="activityCanvas"></canvas>
+          <div class="caption">Génération — 60 dernières secondes</div>
+        </div>
       </div>
     </div>
 
     <!-- Models -->
     <div class="card">
-      <h2>🧩 Modèles</h2>
+      <h2>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l9 4-9 4-9-4 9-4z"/><path d="M3 12l9 4 9-4"/><path d="M3 16l9 4 9-4"/></svg>
+        Modèles
+      </h2>
       <div class="body" id="modelsBody"><div class="empty">Chargement…</div></div>
     </div>
 
-    <!-- Queue / In-flight -->
+    <!-- Queue -->
     <div class="card">
-      <h2>🚦 File d'attente</h2>
-      <div class="body" id="queueBody"><div class="empty">—</div></div>
+      <h2>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+        File d'attente
+      </h2>
+      <div class="body" id="queueBody"><div class="empty">Rien en cours</div></div>
     </div>
 
     <!-- Requests -->
-    <div class="card" style="grid-column:1/-1">
-      <h2>📝 Requêtes récentes</h2>
+    <div class="card span-full">
+      <h2>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+        Requêtes récentes
+      </h2>
       <div class="body">
         <table id="reqTable">
           <thead><tr><th>Heure</th><th>Modèle</th><th>État</th><th class="num">In</th><th class="num">Out</th><th class="num">Latence</th><th class="num">tok/s</th></tr></thead>
@@ -131,7 +321,7 @@
   </div>
 </main>
 
-<footer>Données via l'API llama-swap · rafraîchissement 3s · <span id="ver">—</span></footer>
+<footer>Données via l'API llama-swap · rafraîchissement <span id="pollInterval">3s</span> · <span id="ver">—</span></footer>
 
 <script src="app.js"></script>
 </body>
