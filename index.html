@@ -53,10 +53,9 @@
   }
   .brand { display: flex; align-items: center; gap: 10px; }
   .brand-mark {
-    width: 18px; height: 18px;
-    display: grid; place-items: center;
+    height: 36px;
+    width: auto;
   }
-  .brand-mark svg { width: 18px; height: 18px; }
   .brand h1 {
     font-size: 16px; font-weight: 600; line-height: 1; margin: 0;
     letter-spacing: -0.01em;
@@ -105,6 +104,7 @@
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: 16px;
   }
+  .span-2 { grid-column: span 2; }
   .span-3 { grid-column: span 3; }
   .span-full { grid-column: 1 / -1; }
 
@@ -236,10 +236,7 @@
 <body>
 <header>
   <div class="brand">
-    <div class="brand-mark">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg>
-    </div>
-    <h1>LLM Dashboard</h1>
+    <img class="brand-mark" src="logo.svg" alt="">
   </div>
   <div class="conn">
     <span class="dot" id="connDot"></span>
@@ -256,7 +253,7 @@
 <main>
   <div class="grid">
     <!-- Hardware -->
-    <div class="card">
+    <div class="card span-2">
       <h2>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M20 9h3M1 15h3M20 15h3"/></svg>
         Hardware
@@ -268,11 +265,15 @@
         <div class="bar bar-ram" id="ramBarWrap"><span class="ram-bar" id="ramBar" style="width:0%"></span></div>
         <div class="stat-row" style="margin-top:4px"><span class="stat-label">GPU</span><span class="stat-val" id="gpuVal">—</span></div>
         <div class="stat-row" style="margin-top:4px"><span class="stat-label">Utilization</span><span class="stat-val" id="nvidiaVal">—</span></div>
+        <div class="activity-wrap">
+          <canvas class="activity-canvas" id="utilCanvas"></canvas>
+          <div class="caption">Utilization — last 60 seconds</div>
+        </div>
       </div>
     </div>
 
     <!-- Throughput -->
-    <div class="card">
+    <div class="card span-2">
       <h2>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19l5-8 3 4 4-7 4 5"/><path d="M4 4v5h5"/></svg>
         Throughput
@@ -287,8 +288,7 @@
       </div>
     </div>
 
-    <!-- Models -->
-    <div class="card">
+    <div class="card span-2">
       <h2>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l9 4-9 4-9-4 9-4z"/><path d="M3 12l9 4 9-4"/><path d="M3 16l9 4 9-4"/></svg>
         Models
@@ -297,7 +297,7 @@
     </div>
 
     <!-- Queue -->
-    <div class="card span-3">
+    <div class="card span-2">
       <h2>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
         Queue

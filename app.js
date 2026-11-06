@@ -6,7 +6,7 @@ const POLL_KEY = 'llm_dash_poll';
 let host = localStorage.getItem(KEY) || '';
 let apiKey = localStorage.getItem(APIKEY_KEY) || '';
 let pollMs = Number(localStorage.getItem(POLL_KEY)) || 3000;
-let activity = [];        // [{t, rate}] generation tokens/s over time
+let util = [];           // [{t, rate}] GPU utilization % over time
 let reqRows = [];         // recent request rows (bounded)
 let refreshInterval;     // periodic refresh handle
 let sseController;       // abort handle for live SSE stream
@@ -226,6 +226,58 @@ if (activity.length < 2) {
   });
   ctx.strokeStyle = '#38e0c9'; ctx.lineWidth = 1.5; ctx.stroke();
 }
+function renderUtil() {
+  const c = $('utilCanvas');
+  if (!c) return;
+  const ctx = c.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const w = c.clientWidth, h = c.clientHeight;
+  if (c.width !== w * dpr || c.height !== h * dpr) {
+    c.width = w * dpr; c.height = h * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+  if (util.length < 2) {
+    ctx.fillStyle = '#7a8296'; ctx.font = '12px "IBM Plex Mono", monospace'; ctx.textAlign = 'center';
+    ctx.fillText('collecting…', w / 2, h / 2); return;
+  }
+  const max = 100;
+  const n = util.length;
+  // Muted grid: 4 horizontal lines (25/50/75/100)
+  ctx.strokeStyle = 'rgba(238,240,245,0.06)';
+  ctx.lineWidth = 1;
+  for (let i = 1; i < 4; i++) {
+    const y = (h / 4) * i;
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(w, y);
+    ctx.stroke();
+  }
+  // Y-axis labels (100 at top, 0 at bottom)
+  ctx.fillStyle = '#7a8296';
+  ctx.font = '11px "IBM Plex Mono", monospace';
+  ctx.textAlign = 'right';
+  ctx.fillText('100', w - 6, 14);
+  ctx.fillText('0', w - 6, h - 4);
+  ctx.beginPath();
+  util.forEach((a, i) => {
+    const x = (i / (n - 1)) * w;
+    const y = h - (a.rate / max) * (h - 4) - 2;
+    i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+  });
+  ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath();
+  const g = ctx.createLinearGradient(0, 0, 0, h);
+  g.addColorStop(0, 'rgba(56,224,201,.25)'); g.addColorStop(1, 'rgba(56,224,201,0)');
+  ctx.fillStyle = g; ctx.fill();
+  ctx.beginPath();
+  util.forEach((a, i) => {
+    const x = (i / (n - 1)) * w;
+    const y = h - (a.rate / max) * (h - 4) - 2;
+    i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+  });
+  ctx.strokeStyle = '#38e0c9'; ctx.lineWidth = 1.5; ctx.stroke();
+}
 
 function escapeHtml(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
 function escapeAttr(s) { return String(s).replace(/'/g, "\\'"); }
@@ -316,6 +368,11 @@ async function refresh() {
       fetch(api('/api/version'), { headers: headers() }).then(r => r.ok ? r.json().then(j => j.version) : null).catch(() => null),
     ]);
     if (hw) renderHw(hw);
+    if (hw?.gpu?.util != null) {
+      util.push({ t: Date.now(), rate: hw.gpu.util });
+      if (util.length > 60) util.shift();
+      renderUtil();
+    }
     if (running) renderQueue(running.running || []);
     if (activityData) {
       const rows = (activityData.data || []).slice(0, 50);
