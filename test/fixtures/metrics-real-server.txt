@@ -1,0 +1,72 @@
+# HELP llamaswap_cpu_util_percent CPU utilization per core (0-100)
+# TYPE llamaswap_cpu_util_percent gauge
+llamaswap_cpu_util_percent{core="0"} 81.66189111747852
+llamaswap_cpu_util_percent{core="1"} 21.052631578947366
+llamaswap_cpu_util_percent{core="2"} 36.024844720496894
+llamaswap_cpu_util_percent{core="3"} 58.38509316770186
+llamaswap_cpu_util_percent{core="4"} 47.35202492211838
+llamaswap_cpu_util_percent{core="5"} 32.5
+llamaswap_cpu_util_percent{core="6"} 51.410658307210035
+llamaswap_cpu_util_percent{core="7"} 29.503105590062113
+llamaswap_cpu_util_percent{core="8"} 4.375
+llamaswap_cpu_util_percent{core="9"} 4.968944099378882
+llamaswap_cpu_util_percent{core="10"} 51.4018691588785
+llamaswap_cpu_util_percent{core="11"} 18.495297805642632
+llamaswap_cpu_util_percent{core="12"} 1.2461059190031152
+llamaswap_cpu_util_percent{core="13"} 0.9375
+llamaswap_cpu_util_percent{core="14"} 35.625
+llamaswap_cpu_util_percent{core="15"} 39.0625
+# HELP llamaswap_memory_total_bytes Total memory in bytes
+# TYPE llamaswap_memory_total_bytes gauge
+llamaswap_memory_total_bytes 34258026496
+# HELP llamaswap_memory_used_bytes Used memory in bytes
+# TYPE llamaswap_memory_used_bytes gauge
+llamaswap_memory_used_bytes 27996979200
+# HELP llamaswap_memory_free_bytes Free memory in bytes
+# TYPE llamaswap_memory_free_bytes gauge
+llamaswap_memory_free_bytes 6261047296
+# HELP llamaswap_swap_total_bytes Total swap in bytes
+# TYPE llamaswap_swap_total_bytes gauge
+llamaswap_swap_total_bytes 0
+# HELP llamaswap_swap_used_bytes Used swap in bytes
+# TYPE llamaswap_swap_used_bytes gauge
+llamaswap_swap_used_bytes 0
+# HELP llamaswap_load_average Load average
+# TYPE llamaswap_load_average gauge
+llamaswap_load_average{interval="1m"} 0
+llamaswap_load_average{interval="5m"} 0
+llamaswap_load_average{interval="15m"} 0
+# HELP llamaswap_network_bytes_total Total network bytes transferred
+# TYPE llamaswap_network_bytes_total counter
+llamaswap_network_bytes_total{interface="Tailscale",direction="recv"} 367879321
+llamaswap_network_bytes_total{interface="Tailscale",direction="sent"} 543091214
+llamaswap_network_bytes_total{interface="Ethernet",direction="recv"} 35994033454
+llamaswap_network_bytes_total{interface="Ethernet",direction="sent"} 1044799955
+llamaswap_network_bytes_total{interface="Loopback Pseudo-Interface 1",direction="recv"} 0
+llamaswap_network_bytes_total{interface="Loopback Pseudo-Interface 1",direction="sent"} 0
+llamaswap_network_bytes_total{interface="vEthernet (Default Switch)",direction="recv"} 0
+llamaswap_network_bytes_total{interface="vEthernet (Default Switch)",direction="sent"} 1712918
+# HELP llamaswap_gpu_temperature_celsius GPU temperature in Celsius
+# TYPE llamaswap_gpu_temperature_celsius gauge
+llamaswap_gpu_temperature_celsius{id="0",name="NVIDIA GeForce RTX 3080",uuid="GPU-92c3e76c-f2b5-ad55-70b2-7e2c07129b66"} 56
+# HELP llamaswap_gpu_vram_temperature_celsius GPU VRAM temperature in Celsius
+# TYPE llamaswap_gpu_vram_temperature_celsius gauge
+llamaswap_gpu_vram_temperature_celsius{id="0",name="NVIDIA GeForce RTX 3080",uuid="GPU-92c3e76c-f2b5-ad55-70b2-7e2c07129b66"} 0
+# HELP llamaswap_gpu_util_percent GPU utilization percent (0-100)
+# TYPE llamaswap_gpu_util_percent gauge
+llamaswap_gpu_util_percent{id="0",name="NVIDIA GeForce RTX 3080",uuid="GPU-92c3e76c-f2b5-ad55-70b2-7e2c07129b66"} 43
+# HELP llamaswap_gpu_memory_util_percent GPU memory utilization percent (0-100)
+# TYPE llamaswap_gpu_memory_util_percent gauge
+llamaswap_gpu_memory_util_percent{id="0",name="NVIDIA GeForce RTX 3080",uuid="GPU-92c3e76c-f2b5-ad55-70b2-7e2c07129b66"} 96.85546875
+# HELP llamaswap_gpu_memory_used_bytes GPU memory used in bytes
+# TYPE llamaswap_gpu_memory_used_bytes gauge
+llamaswap_gpu_memory_used_bytes{id="0",name="NVIDIA GeForce RTX 3080",uuid="GPU-92c3e76c-f2b5-ad55-70b2-7e2c07129b66"} 1.0399776768e+10
+# HELP llamaswap_gpu_memory_total_bytes GPU memory total in bytes
+# TYPE llamaswap_gpu_memory_total_bytes gauge
+llamaswap_gpu_memory_total_bytes{id="0",name="NVIDIA GeForce RTX 3080",uuid="GPU-92c3e76c-f2b5-ad55-70b2-7e2c07129b66"} 1.073741824e+10
+# HELP llamaswap_gpu_fan_speed_percent GPU fan speed percent (0-100)
+# TYPE llamaswap_gpu_fan_speed_percent gauge
+llamaswap_gpu_fan_speed_percent{id="0",name="NVIDIA GeForce RTX 3080",uuid="GPU-92c3e76c-f2b5-ad55-70b2-7e2c07129b66"} 63
+# HELP llamaswap_gpu_power_draw_watts GPU power draw in watts
+# TYPE llamaswap_gpu_power_draw_watts gauge
+llamaswap_gpu_power_draw_watts{id="0",name="NVIDIA GeForce RTX 3080",uuid="GPU-92c3e76c-f2b5-ad55-70b2-7e2c07129b66"} 223.75
