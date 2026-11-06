@@ -324,18 +324,22 @@ async function refresh() {
 // x-api-key header required by auth-protected servers.
 function connectEvents() {
   if (sseController) { try { sseController.abort(); } catch (_) {} }
-  let reader, controller;
   async function stream() {
+    // Create the controller before fetch so aborting it cancels the request,
+    // the body reader loop, and the reconnect timers below.
+    const controller = new AbortController();
+    sseController = controller;
     try {
-      const res = await fetch(api('/api/events'), { headers: headers() });
+      const res = await fetch(api('/api/events'), {
+        headers: headers(),
+        signal: controller.signal,
+      });
       if (!res.ok) { setConn(false); setTimeout(stream, 3000); return; }
-      controller = new AbortController();
-      sseController = controller;
-      reader = res.body.getReader();
+      const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buf = '';
       while (true) {
-        const { value, done } = await reader.read();
+        const { value, done } = await reader.read({ signal: controller.signal });
         if (done) break;
         buf += decoder.decode(value, { stream: true });
         let idx;
@@ -344,8 +348,10 @@ function connectEvents() {
           handleSSE(chunk);
         }
       }
-    } catch (e) { /* connection closed; reconnect below */ }
-    setTimeout(stream, 3000);
+    } catch (e) {
+      if (controller.signal.aborted) return; // aborted on purpose; new stream started
+      setTimeout(stream, 3000);
+    }
   }
   function handleSSE(chunk) {
     let data = null;
