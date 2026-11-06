@@ -3,7 +3,7 @@
 > Lightweight, dependency-free web dashboard for monitoring **llama-swap** / **llama-cpp**
 > model state on a machine anywhere on your network — meant to be hosted on a NAS.
 
-[![Status](https://img.shields.io/badge/status-production%20ready-38e0c9)](#status)
+[![Status](https://img.shields.io/badge/status-works%20against%20real%20llama%2Dswap%20metrics-38e0c9)](#features)
 [![No dependencies](https://img.shields.io/badge/deps-0%20installed-7a8296)](#dependencies)
 [![License](https://img.shields.io/badge/license-MIT-7a8296)](#license)
 [![Language](https://img.shields.io/badge/lang-HTML%20%7C%20CSS%20%7C%20JS-7a8296)](#language)
@@ -14,7 +14,7 @@
 
 ## Features
 
-- **Hardware** — VRAM, system RAM, GPU model, GPU utilization — loaded *live* from Prometheus `/metrics`
+- **Hardware** — VRAM, system RAM, GPU model, GPU utilization, CPU utilization, GPU temperature, GPU power draw — loaded *live* from Prometheus `/metrics`
 - **Throughput** — generation and prompt tokens/s, with a 60-second rolling chart
 - **Models** — state (loaded / starting / idle / stopped), Wake / Unload actions
 - **Queue** — models currently starting up
