@@ -37,11 +37,14 @@ manuellement puis **Connexion**.
 | Décharger | `POST /api/models/unload/{model}` |
 
 > `llama-swap` n'a pas d'endpoint de chargement dédié : un modèle se réveille à la
+> première requête d'inférence. Le bouton « Réveiller » envoie donc une petite
+> complétion jetée ; non testé en production.
 
-> Si le llama-swap exige une clé API (champ « clé API »), envoyez-la dans l'en-tête
-> `x-api-key`. Elle est mémorisée en `localStorage` et transmise sur toutes les requêtes.
-> La liste des modèles en live passe par un reader `fetch` (et non `EventSource`) car
-> `EventSource` ne peut pas envoyer d'en-tête.
+> Le dashboard tourne dans le navigateur. `config.json` est lu côté client, la clé
+> API est stockée en `localStorage` et transmise dans `x-api-key` sur toutes les
+> requêtes. Tout visiteur du site (ou quiconnaient l'URL du NAS) peut lire le JSON
+> et le localStorage : la clé y est donc en clair. Utilisez une clé dédiée, limitée
+> à l'API llama-swap, et révoquez-la si elle a été exposée.
 
 ## Test avec le mock
 
