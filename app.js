@@ -6,6 +6,7 @@ const POLL_KEY = 'llm_dash_poll';
 let host = localStorage.getItem(KEY) || '';
 let apiKey = localStorage.getItem(APIKEY_KEY) || '';
 let pollMs = Number(localStorage.getItem(POLL_KEY)) || 3000;
+let activity = [];        // [{t, rate}] generation tokens/s over time
 let util = [];           // [{t, rate}] GPU utilization % over time
 let reqRows = [];         // recent request rows (bounded)
 let refreshInterval;     // periodic refresh handle
